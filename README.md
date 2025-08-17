@@ -1,4 +1,4 @@
-# Shifra - Signal enabled confidential AI.
+# Signal enabled confidential AI.
 
 A Signal messenger bot that gives you AI agent in your chat.
 
