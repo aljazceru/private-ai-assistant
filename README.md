@@ -10,7 +10,7 @@ A Signal messenger bot that gives you AI agent in your chat.
 
 ## Requirements
 - working [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) instance
-- working [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) instance (if you want voice support that is)
+- working [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) instance (if you want voice support)
 - account at [privatemode.ai](https://privatemode.ai)
 
 ## Setup
@@ -67,7 +67,7 @@ python signal_bot.py
 ## Architecture
 
 - Uses `signalbot` library for Signal integration
-- Connects to PrivateMode.ai Chat Completions API endpoint
+- Connects to PrivateMode.ai API endpoint
 - Integrates with Whisper ASR for voice transcription
 - Maintains conversation context per sender (last 10 messages)
 - Supports docker deployment with signal-cli-rest-api
