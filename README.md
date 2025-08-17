@@ -6,10 +6,12 @@ A Signal messenger bot that gives you AI agent in your chat.
 
 - Chat with AI assistant via Signal messages
 - Voice message transcription with Whisper ASR
-- Multi-instance Whisper support with automatic failover
-- Maintains conversation context
-- Simple command interface
-- Docker deployment ready
+- Voice commands with activation phrase 
+
+## Requirements
+- working [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) instance
+- working [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) instance (if you want voice support that is)
+- account at [privatemode.ai](https://privatemode.ai)
 
 ## Setup
 
