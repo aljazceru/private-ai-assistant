@@ -1,0 +1,24 @@
+{
+  "roles": {
+    "admin": {
+      "description": "Full access to all commands and user management",
+      "permissions": ["*"]
+    },
+    "user": {
+      "description": "Standard user with chat access",
+      "permissions": ["chat", "clear", "models", "help"]
+    },
+    "guest": {
+      "description": "Limited access user",
+      "permissions": ["help"]
+    }
+  },
+  "users": {
+    "+123456789": {
+      "role": "admin",
+      "name": "Default Admin",
+      "added_by": "system",
+      "added_at": "2024-01-01T00:00:00Z"
+    }
+  }
+}

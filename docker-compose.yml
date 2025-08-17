@@ -1,0 +1,34 @@
+services:
+  signal-bot:
+    build: .
+    env_file: .env
+    network_mode: "host"
+    environment:
+      - SIGNAL_SERVICE=127.0.0.1:18380
+      - SIGNAL_PHONE_NUMBER=${SIGNAL_PHONE_NUMBER}
+      - PRIVATEMODE_BASE_URL=${PRIVATEMODE_BASE_URL}
+      - PRIVATEMODE_MODEL=${PRIVATEMODE_MODEL}
+      - WHISPER_ASR_URLS=${WHISPER_ASR_URLS}
+      - WHISPER_OUTPUT_FORMAT=${WHISPER_OUTPUT_FORMAT:-text}
+      - WHISPER_VAD_FILTER=${WHISPER_VAD_FILTER:-true}
+      - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-}
+    volumes:
+      - ./.env:/app/.env
+    restart: unless-stopped
+
+  privatemode-proxy:
+    image: ghcr.io/edgelesssys/privatemode/privatemode-proxy:latest
+    environment:
+      - PRIVATEMODE_API_KEY=${PRIVATEMODE_API_KEY:-}
+      - PRIVATEMODE_CACHE_MODE=${PRIVATEMODE_CACHE_MODE:-none}
+      - PRIVATEMODE_CACHE_SALT=${PRIVATEMODE_CACHE_SALT:-}
+    entrypoint: ["/bin/privatemode-proxy"]
+    command: [
+      "--apiKey=${PRIVATEMODE_API_KEY}",
+      "--port=8080"
+    ]
+    ports:
+      - "28082:8080"
+    restart: unless-stopped
+
+
