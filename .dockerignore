@@ -1,0 +1,153 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.out
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Documentation
+*.md
+docs/
+_readme/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Model files (download separately)
+models/
+*.tar.bz2
+*.tar.gz
+*.zip
+
+# Permission files (mount as volume)
+permissions.json
+example_permissions.json
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Test files
+test/
+tests/
+*_test.py
+test_*.py
+
+# Development scripts
+download_models.py
+*MIGRATION_GUIDE*
+
+# Signal bot specific
+signal-bot.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Audio files (for testing)
+*.wav
+*.mp3
+*.ogg
+*.opus
+
+# Large files and directories
+large_files/
+temp/
+cache/
+
+# Node modules (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Backup files
+*.bak
+*.backup
+*.old

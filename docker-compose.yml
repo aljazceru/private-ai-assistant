@@ -1,34 +1,115 @@
+
 services:
   signal-bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: signal-bot
+    hostname: signal-bot
     env_file: .env
-    network_mode: "host"
     environment:
-      - SIGNAL_SERVICE=127.0.0.1:18380
+      # Core Signal Configuration
       - SIGNAL_PHONE_NUMBER=${SIGNAL_PHONE_NUMBER}
+      - SIGNAL_SERVICE=${SIGNAL_SERVICE}
       - PRIVATEMODE_BASE_URL=${PRIVATEMODE_BASE_URL}
-      - PRIVATEMODE_MODEL=${PRIVATEMODE_MODEL}
-      - WHISPER_ASR_URLS=${WHISPER_ASR_URLS}
+      - PRIVATEMODE_MODEL=${PRIVATEMODE_MODEL:-}
+
+      # Sherpa-ONNX Configuration (Local Processing)
+      - USE_SHERPA_STT=${USE_SHERPA_STT}
+      - USE_SHERPA_TTS=${USE_SHERPA_TTS}
+      - SHERPA_MODELS_ROOT=/app/models
+      - SHERPA_ASR_MODEL=${SHERPA_ASR_MODEL:-sensevoice}
+      - SHERPA_ASR_LANGUAGE=${SHERPA_ASR_LANGUAGE}
+      - SHERPA_PROVIDER=${SHERPA_PROVIDER}
+      - SHERPA_THREADS=${SHERPA_THREADS}
+      - SHERPA_TTS_MODEL=${SHERPA_TTS_MODEL:-vits-zh-hf-theresa}
+      - SHERPA_SPEAKER_ID=${SHERPA_SPEAKER_ID:-0}
+      - SHERPA_SPEED=${SHERPA_SPEED:-1.0}
+
+      # Legacy External API Configuration (Fallback)
+      - WHISPER_ASR_URLS=${WHISPER_ASR_URLS:-}
       - WHISPER_OUTPUT_FORMAT=${WHISPER_OUTPUT_FORMAT:-text}
       - WHISPER_VAD_FILTER=${WHISPER_VAD_FILTER:-true}
       - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-}
+      - KOKORO_TTS_URLS=${KOKORO_TTS_URLS:-}
+      - KOKORO_TTS_VOICE=${KOKORO_TTS_VOICE:-af_bella}
+      - KOKORO_TTS_FORMAT=${KOKORO_TTS_FORMAT:-mp3}
+
+      # Application Configuration
+      - VOICE_ACTIVATION_PHRASE=${VOICE_ACTIVATION_PHRASE}
+      - ENABLE_FILE_WATCHER=${ENABLE_FILE_WATCHER:-true}
+
+      # Storage Configuration
+      - STORAGE_TYPE=${STORAGE_TYPE:-sqlite}
+      - STORAGE_DB_PATH=/app/data/bot.db
+
     volumes:
-      - ./.env:/app/.env
+      # Mount models directory for local STT/TTS
+      - ./models:/app/models:ro
+      # Mount permissions file for user management
+      - ./permissions.json:/app/permissions.json:ro
+      # Mount data directory for SQLite database (using /tmp/data inside container)
+      - ./data:/tmp/data
+      # Mount logs directory for persistent logs
+      - ./logs:/app/logs
+      # Mount tmp directory for database persistence
+      - bot_tmp:/tmp
+
+
     restart: unless-stopped
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.path.insert(0, '/app'); import signal_bot; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+
+    # Resource limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   privatemode-proxy:
     image: ghcr.io/edgelesssys/privatemode/privatemode-proxy:latest
+    container_name: privatemode-proxy
+    hostname: privatemode-proxy
     environment:
       - PRIVATEMODE_API_KEY=${PRIVATEMODE_API_KEY:-}
       - PRIVATEMODE_CACHE_MODE=${PRIVATEMODE_CACHE_MODE:-none}
       - PRIVATEMODE_CACHE_SALT=${PRIVATEMODE_CACHE_SALT:-}
-    entrypoint: ["/bin/privatemode-proxy"]
     command: [
-      "--apiKey=${PRIVATEMODE_API_KEY}",
+      "--apiKey=${PRIVATEMODE_API_KEY:-}",
       "--port=8080"
     ]
     ports:
       - "28082:8080"
     restart: unless-stopped
+
+volumes:
+  signal-cli:
+    name: signal-cli-data
+    driver: local
+  logs:
+    name: signal-bot-logs
+    driver: local
+  data:
+    name: signal-bot-data
+    driver: local
+  bot_tmp:
+    name: signal-bot-tmp
+    driver: local
 
 
