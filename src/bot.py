@@ -175,26 +175,17 @@ class UnifiedMessageHandler:
                         temp_file_path = temp_file.name
 
                     try:
-                        # Try to send the audio file using various possible signalbot methods
-                        sent = False
+                        # Read audio data and encode as base64 for signalbot
+                        import base64
+                        with open(temp_file_path, 'rb') as f:
+                            audio_data_b64 = base64.b64encode(f.read()).decode('utf-8')
 
-                        # Try different possible methods for sending attachments
-                        if hasattr(c, 'send_attachment'):
-                            await c.send_attachment(temp_file_path)
-                            sent = True
-                            logger.info(f"Sent TTS audio via send_attachment: {response_text[:50]}...")
-                        elif hasattr(c, 'send_file'):
-                            await c.send_file(temp_file_path)
-                            sent = True
-                            logger.info(f"Sent TTS audio via send_file: {response_text[:50]}...")
-                        elif hasattr(c, 'send_media'):
-                            await c.send_media(temp_file_path)
-                            sent = True
-                            logger.info(f"Sent TTS audio via send_media: {response_text[:50]}...")
-
-                        if not sent:
-                            # Log that TTS was generated but couldn't be sent
-                            logger.info(f"Generated TTS audio ({len(audio_data)} bytes) but no file sending method found")
+                        # Send audio using signalbot's send method with base64_attachments
+                        await c.send(
+                            text=response_text,
+                            base64_attachments=[audio_data_b64]
+                        )
+                        logger.info(f"Sent TTS audio via base64_attachments: {response_text[:50]}...")
                     finally:
                         # Clean up temporary file
                         try:
