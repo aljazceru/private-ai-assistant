@@ -524,10 +524,44 @@ def main():
 
     # PrivateMode API configuration
     privatemode_base_url = os.getenv("PRIVATEMODE_BASE_URL", "http://localhost:8080")
+    privatemode_api_key = os.getenv("PRIVATEMODE_API_KEY", None)
     model = os.getenv("PRIVATEMODE_MODEL", None)
 
     # Initialize PrivateMode client
-    privatemode_client = PrivateModeClient(privatemode_base_url)
+    privatemode_client = PrivateModeClient(privatemode_base_url, privatemode_api_key)
+
+    # Verify AI endpoint and models at startup
+    logger.info(f"Verifying PrivateMode.ai API endpoint: {privatemode_base_url}")
+    verification_loop = None
+    try:
+        verification_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(verification_loop)
+
+        success, available_models, error_message = verification_loop.run_until_complete(
+            privatemode_client.verify_models_at_startup(preferred_model=model)
+        )
+
+        if not success:
+            logger.error(f"❌ AI endpoint verification failed: {error_message}")
+            logger.error("Bot will continue, but chat features may not work properly")
+        else:
+            logger.info("✅ AI endpoint verification completed successfully")
+
+            # Update model if preferred model is not available but others are
+            if model and model not in available_models:
+                logger.warning(f"⚠️ Configured model '{model}' not available, switching to '{available_models[0]}'")
+                model = available_models[0]
+            elif not model and available_models:
+                model = available_models[0]
+                logger.info(f"Using default model: {model}")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to verify AI endpoint at startup: {str(e)}")
+        logger.error("Bot will continue, but chat features may not work properly")
+    finally:
+        if verification_loop is not None:
+            verification_loop.close()
+        asyncio.set_event_loop(None)
 
     # Initialize permission manager
     permission_manager = PermissionManager()

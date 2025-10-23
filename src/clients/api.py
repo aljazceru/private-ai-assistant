@@ -24,11 +24,15 @@ logger = logging.getLogger(__name__)
 class PrivateModeClient:
     """Client for PrivateMode.ai API"""
 
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, api_key: str = None):
         self.base_url = base_url.rstrip('/')
         self.headers = {
             "Content-Type": "application/json"
         }
+
+        # Add Authorization header if API key is provided
+        if api_key:
+            self.headers["Authorization"] = f"Bearer {api_key}"
 
     async def list_models(self) -> list:
         """List available models from PrivateMode.ai"""
@@ -46,6 +50,100 @@ class PrivateModeClient:
             except Exception as e:
                 logger.error(f"Model listing failed: {str(e)}")
                 return []
+
+    async def verify_models_at_startup(self, preferred_model: str = None) -> Tuple[bool, List[str], Optional[str]]:
+        """
+        Verify that the AI endpoint is working and list available models.
+        Returns a tuple of (success, available_models, error_message)
+        """
+        logger.info("Verifying AI endpoint connectivity and available models...")
+
+        try:
+            # Test basic connectivity with a timeout
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                # First try standard OpenAI /v1/models endpoint
+                models_url = f"{self.base_url}/v1/models"
+                logger.info(f"Trying models endpoint: {models_url}")
+
+                async with session.get(models_url, headers=self.headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        models = [model['id'] for model in data.get('data', [])]
+
+                        if not models:
+                            return False, [], "No models available from API"
+
+                        logger.info(f"✅ AI endpoint verified - {len(models)} models available")
+                        for model in models[:5]:  # Log first 5 models
+                            logger.info(f"  - {model}")
+                        if len(models) > 5:
+                            logger.info(f"  ... and {len(models) - 5} more models")
+
+                        # Check if preferred model is available
+                        if preferred_model and preferred_model in models:
+                            logger.info(f"✅ Preferred model '{preferred_model}' is available")
+                        elif preferred_model:
+                            logger.warning(f"⚠️ Preferred model '{preferred_model}' not found, will use first available model")
+
+                        return True, models, None
+                    elif response.status == 404:
+                        # If /v1/models returns 404, try to use the configured model directly
+                        logger.info(f"Models endpoint not found (404), trying to verify with configured model")
+                        return await self._verify_with_chat_completion(session, preferred_model)
+                    else:
+                        error_text = await response.text()
+                        error_msg = f"AI endpoint returned HTTP {response.status}: {error_text}"
+                        logger.error(f"❌ {error_msg}")
+                        return False, [], error_msg
+
+        except aiohttp.ClientTimeout:
+            error_msg = f"AI endpoint timeout after 10 seconds: {self.base_url}"
+            logger.error(f"❌ {error_msg}")
+            return False, [], error_msg
+        except aiohttp.ClientConnectorError:
+            error_msg = f"Cannot connect to AI endpoint: {self.base_url}"
+            logger.error(f"❌ {error_msg}")
+            return False, [], error_msg
+        except Exception as e:
+            error_msg = f"Failed to verify AI endpoint: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return False, [], error_msg
+
+    async def _verify_with_chat_completion(self, session, preferred_model: str) -> Tuple[bool, List[str], Optional[str]]:
+        """
+        Verify endpoint works by trying a simple chat completion when /v1/models is not available.
+        This is common for custom API wrappers that don't expose the models endpoint.
+        """
+        try:
+            # Use the preferred model or a common default
+            test_model = preferred_model or "gpt-3.5-turbo"
+
+            # Create a minimal test request
+            chat_url = f"{self.base_url}/v1/chat/completions"
+            logger.info(f"Testing chat endpoint: {chat_url} with model: {test_model}")
+
+            payload = {
+                "model": test_model,
+                "messages": [{"role": "user", "content": "test"}],
+                "max_tokens": 1
+            }
+
+            async with session.post(chat_url, json=payload, headers=self.headers) as response:
+                if response.status == 200:
+                    logger.info(f"✅ Chat endpoint verified with model: {test_model}")
+                    # Return the model as if it came from a models list
+                    return True, [test_model], None
+                else:
+                    error_text = await response.text()
+                    error_msg = f"Chat endpoint test failed with HTTP {response.status}: {error_text}"
+                    logger.error(f"❌ {error_msg}")
+                    return False, [], error_msg
+
+        except Exception as e:
+            error_msg = f"Chat endpoint verification failed: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return False, [], error_msg
 
     async def chat_completion(self, messages: list, model: str = None) -> str:
         """Generate chat completion using PrivateMode.ai"""
