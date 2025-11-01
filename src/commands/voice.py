@@ -30,7 +30,7 @@ class VoiceMessageHandler(Command):
     async def send_ai_response(self, c: Context, response_text: str):
         """Send AI response as both text and voice (if TTS available)"""
         # Always send text response first
-        await c.send(f"🤖 {response_text}")
+        await c.send(f"[AI] {response_text}")
 
         # Generate and send voice response if TTS is available
         if self.tts_client:
@@ -184,13 +184,17 @@ class VoiceMessageHandler(Command):
                 await c.send("Unable to transcribe voice message. Please try again.")
                 return
 
-            logger.info(f"Transcribed text: {transcribed_text}")
+            # Print transcription clearly with formatting
+            print(f"\n[VOICE] Transcription [{sender}]:")
+            print(f"   {transcribed_text}")
+            print(f"{'='*50}")
+            logger.info(f"[VOICE] Transcription [{sender}]: {transcribed_text}")
 
             # Check for voice activation phrase if set
             should_chat, chat_text, cleaned_transcription = self._parse_transcription(transcribed_text)
 
             # Send transcription back to user
-            await c.send(f"🎤 Transcribed: {cleaned_transcription}")
+            await c.send(f"[VOICE] Transcribed: {cleaned_transcription}")
 
             if should_chat:
                 if chat_text:

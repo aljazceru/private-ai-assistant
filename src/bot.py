@@ -161,7 +161,7 @@ class UnifiedMessageHandler:
     async def send_ai_response(self, c, response_text: str):
         """Send AI response as both text and voice (if TTS available)"""
         # Always send text response first
-        await c.send(f"🤖 {response_text}")
+        await c.send(f"[AI] {response_text}")
 
         # Generate and send voice response if TTS is available
         if self.tts_client:
@@ -476,14 +476,31 @@ class UnifiedMessageHandler:
             transcription = await self.stt_client.transcribe_audio(audio_data, file_extension)
 
             if transcription:
+                # Print transcription clearly with formatting
+                print(f"\n[VOICE] Transcription [{sender}]:")
+                print(f"   {transcription}")
+                print(f"{'='*50}")
+                logger.info(f"[VOICE] Transcription [{sender}]: {transcription}")
+
                 should_chat, chat_text, cleaned_transcription = self._parse_voice_transcription(transcription)
+
+                # Check if chat text is a command after activation phrase
+                if should_chat and chat_text and chat_text.strip().startswith('!'):
+                    # Extract command and execute it
+                    command_text = chat_text.strip()
+                    logger.info(f"[VOICE] Command detected: {command_text}")
+                    await c.send(f"[VOICE] Command executed: {command_text}")
+
+                    # Execute the command through the normal command handling
+                    await self.handle_command(c, command_text)
+                    return
 
                 if not should_chat:
                     # Just transcription request - send status and result
                     await c.send("Transcribing your message...")
-                    await c.send(f"Transcription:\n{cleaned_transcription}")
+                    await c.send(f"[VOICE] Transcription:\n{cleaned_transcription}")
 
-                if should_chat:
+                elif should_chat:
                     if chat_text:  # Only proceed if there's text after activation phrase
                         # Add user message to conversation history
                         self.add_user_message(sender, chat_text)
@@ -542,21 +559,21 @@ def main():
         )
 
         if not success:
-            logger.error(f"❌ AI endpoint verification failed: {error_message}")
+            logger.error(f"[ERROR] AI endpoint verification failed: {error_message}")
             logger.error("Bot will continue, but chat features may not work properly")
         else:
-            logger.info("✅ AI endpoint verification completed successfully")
+            logger.info("[SUCCESS] AI endpoint verification completed successfully")
 
             # Update model if preferred model is not available but others are
             if model and model not in available_models:
-                logger.warning(f"⚠️ Configured model '{model}' not available, switching to '{available_models[0]}'")
+                logger.warning(f"[WARNING] Configured model '{model}' not available, switching to '{available_models[0]}'")
                 model = available_models[0]
             elif not model and available_models:
                 model = available_models[0]
                 logger.info(f"Using default model: {model}")
 
     except Exception as e:
-        logger.error(f"❌ Failed to verify AI endpoint at startup: {str(e)}")
+        logger.error(f"[ERROR] Failed to verify AI endpoint at startup: {str(e)}")
         logger.error("Bot will continue, but chat features may not work properly")
     finally:
         if verification_loop is not None:

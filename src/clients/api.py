@@ -74,7 +74,7 @@ class PrivateModeClient:
                         if not models:
                             return False, [], "No models available from API"
 
-                        logger.info(f"✅ AI endpoint verified - {len(models)} models available")
+                        logger.info(f"[SUCCESS] AI endpoint verified - {len(models)} models available")
                         for model in models[:5]:  # Log first 5 models
                             logger.info(f"  - {model}")
                         if len(models) > 5:
@@ -82,9 +82,9 @@ class PrivateModeClient:
 
                         # Check if preferred model is available
                         if preferred_model and preferred_model in models:
-                            logger.info(f"✅ Preferred model '{preferred_model}' is available")
+                            logger.info(f"[SUCCESS] Preferred model '{preferred_model}' is available")
                         elif preferred_model:
-                            logger.warning(f"⚠️ Preferred model '{preferred_model}' not found, will use first available model")
+                            logger.warning(f"[WARNING] Preferred model '{preferred_model}' not found, will use first available model")
 
                         return True, models, None
                     elif response.status == 404:
@@ -94,20 +94,20 @@ class PrivateModeClient:
                     else:
                         error_text = await response.text()
                         error_msg = f"AI endpoint returned HTTP {response.status}: {error_text}"
-                        logger.error(f"❌ {error_msg}")
+                        logger.error(f"[ERROR] {error_msg}")
                         return False, [], error_msg
 
         except aiohttp.ClientTimeout:
             error_msg = f"AI endpoint timeout after 10 seconds: {self.base_url}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"[ERROR] {error_msg}")
             return False, [], error_msg
         except aiohttp.ClientConnectorError:
             error_msg = f"Cannot connect to AI endpoint: {self.base_url}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"[ERROR] {error_msg}")
             return False, [], error_msg
         except Exception as e:
             error_msg = f"Failed to verify AI endpoint: {str(e)}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"[ERROR] {error_msg}")
             return False, [], error_msg
 
     async def _verify_with_chat_completion(self, session, preferred_model: str) -> Tuple[bool, List[str], Optional[str]]:
@@ -131,18 +131,18 @@ class PrivateModeClient:
 
             async with session.post(chat_url, json=payload, headers=self.headers) as response:
                 if response.status == 200:
-                    logger.info(f"✅ Chat endpoint verified with model: {test_model}")
+                    logger.info(f"[SUCCESS] Chat endpoint verified with model: {test_model}")
                     # Return the model as if it came from a models list
                     return True, [test_model], None
                 else:
                     error_text = await response.text()
                     error_msg = f"Chat endpoint test failed with HTTP {response.status}: {error_text}"
-                    logger.error(f"❌ {error_msg}")
+                    logger.error(f"[ERROR] {error_msg}")
                     return False, [], error_msg
 
         except Exception as e:
             error_msg = f"Chat endpoint verification failed: {str(e)}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"[ERROR] {error_msg}")
             return False, [], error_msg
 
     async def chat_completion(self, messages: list, model: str = None) -> str:
